@@ -37,7 +37,7 @@ class CombinationEdges:
             next_previous[identity] = set(buttons)
             action = action_for(buttons)
             controls = set(DIRECTIONS) | {'rs'}
-            if enabled and action and not (before & controls) and result is None:
+            if enabled and action and (not (before & controls) or action_for(before) is None) and result is None:
                 result = action
         self.previous = next_previous
         return result

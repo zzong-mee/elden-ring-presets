@@ -27,6 +27,12 @@ class ControllerTests(unittest.TestCase):
         edges.update({0: set()})
         self.assertEqual(edges.update({0: {'rt', 'dpad_down'}}), ('load', 3))
 
+    def test_modifiers_can_be_pressed_after_direction(self):
+        edges = CombinationEdges()
+        self.assertIsNone(edges.update({1: {'dpad_up'}}))
+        self.assertEqual(edges.update({1: {'dpad_up', 'rt'}}), ('load', 1))
+        self.assertIsNone(edges.update({1: {'dpad_up', 'rt'}}))
+
     def test_multiple_devices_do_not_combine_their_buttons(self):
         edges = CombinationEdges()
         self.assertIsNone(edges.update({1: {'rt'}, 3: {'dpad_up'}}))
