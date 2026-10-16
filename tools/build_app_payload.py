@@ -15,7 +15,7 @@ def prepare(root, output):
         raise RuntimeError('Python 3.13 is required for the user-supplied runtime')
     modules={}
     for name,path in [('app.model','app/model.py'),('tools.diagnose_1171','tools/diagnose_1171.py'),
-                      ('app.windows','app/windows.py'),('app.main','app/main.py')]:
+                      ('app.windows','app/windows.py'),('app.controller','app/controller.py'),('app.main','app/main.py')]:
         modules[name]=(path,(root/path).read_text(encoding='utf-8'))
     source='''import marshal, sys, types, traceback, pathlib
 for package in ('app', 'tools'):
@@ -51,7 +51,7 @@ except Exception:
                 original_sha256='31a132aceee81a1e2b71fc4ba1d149e074844b36a7c9d029fd1f1d10813727f1',
                 payload=base64.b64encode(packed).decode('ascii'),
                 source_sha256={path:hashlib.sha256((root/path).read_bytes()).hexdigest() for path in
-                               ['app/model.py','app/windows.py','app/main.py','tools/diagnose_1171.py']})
+                               ['app/model.py','app/windows.py','app/controller.py','app/main.py','tools/diagnose_1171.py']})
     output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
     template=(root/'tools/install-from-original.ps1').read_text(encoding='utf-8')

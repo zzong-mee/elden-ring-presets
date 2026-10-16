@@ -17,13 +17,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Install build and controller dependencies
+        run: python -m pip install pyinstaller==6.16.0 pygame-ce==2.5.6
       - name: Run Python tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
       - name: Compile Windows package builder
         shell: pwsh
         run: ./tools/install-from-original.ps1 -ValidateOnly
-      - name: Install build tool
-        run: python -m pip install pyinstaller==6.16.0
       - name: Build application
         run: python -m PyInstaller --clean --noconfirm --onefile --windowed --name EldenRingPresets --paths . app/main.py
       - name: Verify executable opens its application window
@@ -48,7 +48,7 @@ jobs:
             $startupError = Join-Path $logRoot 'startup-error.txt'
             if (Test-Path $startupError) { throw (Get-Content $startupError -Raw) }
             $appLog = Join-Path $logRoot 'app.log'
-            if ((Test-Path $appLog) -and (Select-String -Path $appLog -Pattern 'Application startup failed' -Quiet)) {
+            if ((Test-Path $appLog) -and (Select-String -Path $appLog -Pattern 'Application startup failed|Controller initialization failed|Controller polling failed' -Quiet)) {
               throw (Get-Content $appLog -Raw)
             }
             Write-Host 'Application window opened successfully; no game was running or modified.'

@@ -2,7 +2,8 @@
 
 Windows Steam판 엘든링 오프라인 장비 프리셋 앱입니다. 게임 App/Regulation **1.17.1**과
 DLC를 대상으로 개발 중입니다. 사용자 PC에서 장비·능력치·마법·소지품 읽기를 확인했고,
-**실제 장비 교체와 Windows 앱 실행은 아직 확인하지 못했습니다.** 완성 모드로 안내하지 않습니다.
+Windows 빌드·앱 창 실행 검사를 통과했고 사용자가 키보드 단축키 동작을 확인했습니다.
+패드 수정판의 실제 패드 동작은 사용자 PC에서 추가 확인이 필요합니다.
 
 ## 현재 구현
 
@@ -17,11 +18,11 @@ DLC를 대상으로 개발 중입니다. 사용자 PC에서 장비·능력치·�
 | 능력치·레벨 복원 옵션 | 직접 쓰기 및 읽기 확인 코드 구현, 실게임 미검증, 기본 꺼짐 |
 | 기억한 마법 복원 옵션 | 게임 함수 호출 코드 구현, 실게임 미검증, 기본 꺼짐 |
 | Ctrl+F 프리셋 선택 메뉴 | UI 구현, Windows 미검증 |
-| Xbox 패드 단축키 | XInput 구현, Windows 미검증 |
+| Xbox·PlayStation 패드 단축키 | 원본 방식의 pygame/SDL 입력, 실제 패드 미검증 |
 
 원본 Loadout Manager의 전체 기능을 재구현한 상태는 아닙니다. 소모품·화살·볼트·파우치,
 아이템 아이콘/이름 데이터베이스, 스탯 편집, 미믹 전용 프리셋, 트레이 상주,
-PlayStation 패드 지원, 원본의 모든 설정·가져오기/내보내기 기능은 남아 있습니다.
+원본의 모든 설정·가져오기/내보내기 기능은 남아 있습니다.
 실게임 장비 교체를 먼저 확인한 뒤 범위를 확장해야 합니다.
 
 ## GitHub에서 실행 파일 받기
@@ -33,6 +34,28 @@ EldenRingPresets-Windows-test-build**에서 ZIP을 내려받을 수 있습니다
 이 파일은 GitHub에서 직접 내려받을 수 있습니다. `downloads/BUILD-INFO.json`에 소스 커밋과
 EXE 체크섬, 창 열기 검사 결과를 기록합니다. 실제 빌드가 성공했는지 먼저 확인해야 합니다.
 Windows 빌드 성공도 실제 엘든링 장비 교체 검증을 의미하지는 않습니다.
+
+## 패드 조작 — 원본 Loadout Manager 기본 조합
+
+패드는 기본으로 켜져 있으며 Xbox/PlayStation 패드를 SDL로 감지합니다. 게임이 포커스를
+가져도 입력을 읽고, 앱 실행 후 연결한 패드와 여러 장치를 지원합니다.
+앱의 `패드:` 줄에서 장치 이름과 LT/RT·방향키가 읽히는지 확인할 수 있습니다.
+
+| 프리셋 | 불러오기 | 저장 |
+| --- | --- | --- |
+| 1 | RT + ↑ | LT + RT + ↑ |
+| 2 | RT + → | LT + RT + → |
+| 3 | RT + ↓ | LT + RT + ↓ |
+| 4 | RT + ← | LT + RT + ← |
+
+PlayStation은 LT= L2, RT= R2입니다. 방향키는 왼쪽 스틱이 아닌 십자키입니다.
+LT+RT+오른쪽 스틱 누르기(L2+R2+R3)로 선택 메뉴를 열고, 십자키 선택 후 A/×로 확인,
+B/○로 닫습니다. 한 번 누르면 한 번만 실행하며 저장 조합이 불러오기보다 우선합니다.
+저장 후 LT만 놓아도 불러오기가 추가 실행되지 않습니다.
+
+기존 LB+ABXY 조합은 이 기본 조합으로 교체했습니다. 게임의 원래 패드 입력은 차단하지 않습니다.
+Steam Input/가상 패드 설정에 따라 앱이 보는 장치가 다를 수 있으므로, 반응이 없으면 앱의
+장치·입력 표시를 확인하세요. SDL 매핑이 없는 장치는 원본의 축 4/5·방향키 hat 방식으로 읽습니다.
 
 ## 실행 파일 만들기 — 원본 EXE를 가지고 있는 경우
 
@@ -64,7 +87,7 @@ GitHub Actions `Windows build`도 같은 방식으로 실행 파일을 만듭니
 
 ```powershell
 python -m unittest discover -s tests -p "test_*.py" -v
-python -m pip install pyinstaller==6.16.0
+python -m pip install pyinstaller==6.16.0 pygame-ce==2.5.6
 python -m PyInstaller --clean --noconfirm --onefile --windowed --name EldenRingPresets --paths . app/main.py
 ```
 
