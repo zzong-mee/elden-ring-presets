@@ -43,6 +43,14 @@ jobs:
               if ($started.HasExited) { throw "Application exited before opening its window: $($started.ExitCode)" }
             }
             if (-not $opened) { throw 'Application window did not open within 30 seconds.' }
+            Start-Sleep -Seconds 1
+            $logRoot = Join-Path $env:LOCALAPPDATA 'EldenRingPresets'
+            $startupError = Join-Path $logRoot 'startup-error.txt'
+            if (Test-Path $startupError) { throw (Get-Content $startupError -Raw) }
+            $appLog = Join-Path $logRoot 'app.log'
+            if ((Test-Path $appLog) -and (Select-String -Path $appLog -Pattern 'Application startup failed' -Quiet)) {
+              throw (Get-Content $appLog -Raw)
+            }
             Write-Host 'Application window opened successfully; no game was running or modified.'
           } finally {
             Get-Process -Name EldenRingPresets -ErrorAction SilentlyContinue |
