@@ -1,0 +1,55 @@
+name: Publish beta release
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/four-presets-1171']
+    paths: ['.github/workflows/beta-release.yml']
+permissions:
+  contents: write
+concurrency:
+  group: publish-beta-v0.1.0-beta.1
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: v0.1.0-beta.1
+      TARGET_COMMIT: 618f2f3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify tested executable and release target
+        run: |
+          set -euo pipefail
+          git show "$TARGET_COMMIT:downloads/EldenRingPresets-Test.exe" > /tmp/release-target.exe
+          cmp downloads/EldenRingPresets-Test.exe /tmp/release-target.exe
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          info = json.loads(Path('downloads/BUILD-INFO.json').read_text(encoding='utf-8-sig'))
+          assert info['source_commit'] == '3f679b1b1ab0749c83e2ed22675533dd593bbb0d', info
+          assert info['windows_gui_smoke_test'] == 'passed', info
+          exe = Path('downloads/EldenRingPresets-Test.exe')
+          assert exe.read_bytes()[:2] == b'MZ'
+          assert hashlib.sha256(exe.read_bytes()).hexdigest() == info['exe_sha256']
+          PY
+          (cd downloads && sha256sum EldenRingPresets-Test.exe BUILD-INFO.json > SHA256SUMS.txt)
+      - name: Publish prerelease with verified executable
+        run: |
+          set -euo pipefail
+          target_sha=$(git rev-parse "$TARGET_COMMIT^{commit}")
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo 'Release already exists; refusing to modify published files.'
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" \
+            --target "$target_sha" \
+            --prerelease \
+            --title 'Elden Ring Presets v0.1.0-beta.1' \
+            --notes-file docs/releases/v0.1.0-beta.1.md \
+            downloads/EldenRingPresets-Test.exe \
+            downloads/BUILD-INFO.json \
+            downloads/SHA256SUMS.txt
