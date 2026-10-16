@@ -1,8 +1,8 @@
 {
-  "source_commit": "3f679b1b1ab0749c83e2ed22675533dd593bbb0d",
+  "source_commit": "c70a8f2cd46313ab45b9155b3c5c4a816c8246c1",
   "target_game_version": "1.17.1",
   "build_type": "test",
   "windows_gui_smoke_test": "passed",
   "game_equipment_changes_verified": false,
-  "exe_sha256": "bd0ed61b14c9f804fbb9a5763bfc216a612d0c59ace9ae38a78872ea94f085e9"
+  "exe_sha256": "78ca4b24f1efa4ea1ac5c19af59148be3d379f7dfb65780fdfa00909fdda9476"
 }
