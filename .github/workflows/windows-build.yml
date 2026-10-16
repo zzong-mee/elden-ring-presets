@@ -3,8 +3,12 @@ on:
   workflow_dispatch:
   push:
     branches: ['codex/**']
+    paths-ignore: ['downloads/**', 'docs/**', 'README.md']
 permissions:
   contents: read
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: windows-latest
@@ -22,8 +26,79 @@ jobs:
         run: python -m pip install pyinstaller==6.16.0
       - name: Build application
         run: python -m PyInstaller --clean --noconfirm --onefile --windowed --name EldenRingPresets --paths . app/main.py
+      - name: Verify executable opens its application window
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $existing = @(Get-Process -Name EldenRingPresets -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id)
+          $started = Start-Process -FilePath (Resolve-Path 'dist/EldenRingPresets.exe') -PassThru
+          $opened = $false
+          try {
+            for ($attempt = 0; $attempt -lt 30; $attempt++) {
+              Start-Sleep -Seconds 1
+              $windows = @(Get-Process -Name EldenRingPresets -ErrorAction SilentlyContinue |
+                Where-Object { $existing -notcontains $_.Id -and $_.MainWindowHandle -ne 0 -and $_.MainWindowTitle -like 'Elden Ring Presets*' })
+              if ($windows.Count -gt 0) { $opened = $true; break }
+              $started.Refresh()
+              if ($started.HasExited) { throw "Application exited before opening its window: $($started.ExitCode)" }
+            }
+            if (-not $opened) { throw 'Application window did not open within 30 seconds.' }
+            Write-Host 'Application window opened successfully; no game was running or modified.'
+          } finally {
+            Get-Process -Name EldenRingPresets -ErrorAction SilentlyContinue |
+              Where-Object { $existing -notcontains $_.Id } |
+              Stop-Process -Force -ErrorAction SilentlyContinue
+          }
+      - name: Record build information
+        shell: pwsh
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          $info = [ordered]@{
+            source_commit = $env:SOURCE_SHA
+            target_game_version = '1.17.1'
+            build_type = 'test'
+            windows_gui_smoke_test = 'passed'
+            game_equipment_changes_verified = $false
+            exe_sha256 = (Get-FileHash dist/EldenRingPresets.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          }
+          $info | ConvertTo-Json | Set-Content dist/BUILD-INFO.json -Encoding utf8
       - uses: actions/upload-artifact@v4
         with:
           name: EldenRingPresets-Windows-test-build
-          path: dist/EldenRingPresets.exe
+          path: |
+            dist/EldenRingPresets.exe
+            dist/BUILD-INFO.json
           if-no-files-found: error
+  publish-download:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: EldenRingPresets-Windows-test-build
+          path: compiled
+      - name: Commit tested executable to downloads
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$(git rev-parse HEAD)" != "$SOURCE_SHA" ]; then
+            echo 'Branch advanced during build; leaving its download files unchanged.'
+            exit 0
+          fi
+          mkdir -p downloads
+          cp compiled/EldenRingPresets.exe downloads/EldenRingPresets-Test.exe
+          cp compiled/BUILD-INFO.json downloads/BUILD-INFO.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add downloads/EldenRingPresets-Test.exe downloads/BUILD-INFO.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Add Windows test executable and build verification metadata'
+          git push origin "HEAD:$TARGET_BRANCH"

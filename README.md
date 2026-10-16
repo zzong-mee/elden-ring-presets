@@ -29,7 +29,9 @@ PlayStation 패드 지원, 원본의 모든 설정·가져오기/내보내기 �
 작업 브랜치에 푸시되면 `Windows build` 워크플로가 Windows에서 테스트와 빌드를 실행합니다.
 GitHub 저장소의 **Actions → Windows build → 성공한 실행 → Artifacts →
 EldenRingPresets-Windows-test-build**에서 ZIP을 내려받을 수 있습니다.
-이 ZIP은 채팅 첨부 파일 서비스와 별개입니다. 실제 빌드가 성공했는지 먼저 확인해야 합니다.
+빌드와 앱 창 열기 검사가 통과하면 `downloads/EldenRingPresets-Test.exe`에도 자동으로 커밋합니다.
+이 파일은 GitHub에서 직접 내려받을 수 있습니다. `downloads/BUILD-INFO.json`에 소스 커밋과
+EXE 체크섬, 창 열기 검사 결과를 기록합니다. 실제 빌드가 성공했는지 먼저 확인해야 합니다.
 Windows 빌드 성공도 실제 엘든링 장비 교체 검증을 의미하지는 않습니다.
 
 ## 실행 파일 만들기 — 원본 EXE를 가지고 있는 경우
